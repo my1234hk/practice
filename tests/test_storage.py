@@ -6,6 +6,7 @@ from storage import SQLiteStorage
 
 
 def make_note(name: str, class_name: str, interview_date: date, memo: str) -> InterviewNote:
+    """Create test note with normalized todo and tags."""
     todo = "提出物を出す。睡眠改善"
     return InterviewNote(
         student_id=f"id-{name}",
@@ -15,7 +16,7 @@ def make_note(name: str, class_name: str, interview_date: date, memo: str) -> In
         status_study_life=memo,
         guardian_comment="保護者コメント",
         guidance_todo=todo,
-        free_note=memo,
+        free_note=f"自由メモ:{memo}",
         extracted_todo_md=normalize_todo_to_markdown(todo),
         extracted_tags=",".join(extract_tags(memo, todo)),
     )
@@ -43,3 +44,15 @@ def test_add_get_search(tmp_path):
 
     by_keyword = storage.search_notes(SearchFilters(keyword="受験"))
     assert len(by_keyword) == 1
+
+    by_free_note_keyword = storage.search_notes(SearchFilters(keyword="自由メモ:部活"))
+    assert len(by_free_note_keyword) == 1
+
+
+def test_export_all_as_csv(tmp_path):
+    storage = SQLiteStorage(db_path=tmp_path / "export.db")
+    storage.add_note(make_note("田中", "2A", date(2026, 6, 1), "提出あり"))
+
+    csv_text = storage.export_all_as_csv()
+    assert "student_name" in csv_text
+    assert "田中" in csv_text

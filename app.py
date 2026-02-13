@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime
 
 import pandas as pd
 import streamlit as st
@@ -89,7 +89,15 @@ def render_list(storage: SQLiteStorage) -> None:
         date_from = st.date_input("開始日", value=None)
     with col4:
         date_to = st.date_input("終了日", value=None)
-    keyword = st.text_input("キーワード（自由メモ・現状・保護者コメント・ToDo）")
+    keyword = st.text_input("キーワード（自由メモ含む）")
+
+    options_col1, options_col2, options_col3 = st.columns([1, 1, 2])
+    with options_col1:
+        page_size = st.selectbox("表示件数", [10, 20, 50], index=0)
+    with options_col2:
+        page_no = st.number_input("ページ", min_value=1, step=1, value=1)
+    with options_col3:
+        st.caption("並び順: 面談日降順（新しい順）")
 
     filters = SearchFilters(
         student_name=name.strip(),
@@ -105,8 +113,27 @@ def render_list(storage: SQLiteStorage) -> None:
         st.error(f"検索中にエラーが発生しました: {exc}")
         return
 
+    csv_text = storage.export_all_as_csv()
+    st.download_button(
+        "全データCSVバックアップ",
+        data=csv_text,
+        file_name=f"interview_notes_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+        mime="text/csv",
+        disabled=not bool(csv_text),
+    )
+
     if not notes:
         st.info("該当データがありません。")
+        return
+
+    start = (int(page_no) - 1) * int(page_size)
+    end = start + int(page_size)
+    page_notes = notes[start:end]
+    total_pages = max(1, (len(notes) + int(page_size) - 1) // int(page_size))
+    st.caption(f"{len(notes)}件中 {start + 1}〜{min(end, len(notes))}件を表示（{int(page_no)}/{total_pages}ページ）")
+
+    if not page_notes:
+        st.warning("そのページにはデータがありません。ページ番号を戻してください。")
         return
 
     df = pd.DataFrame(
@@ -119,11 +146,12 @@ def render_list(storage: SQLiteStorage) -> None:
                 "志望1": n.hope_1,
                 "タグ": n.extracted_tags,
             }
-            for n in notes
+            for n in page_notes
         ]
     )
     st.dataframe(df.drop(columns=["id"]), use_container_width=True)
-    selected_id = st.selectbox("詳細表示するID", [n.id for n in notes], index=0)
+
+    selected_id = st.selectbox("詳細表示するID", [n.id for n in page_notes], index=0)
     if st.button("このIDを詳細表示", type="primary"):
         st.session_state["selected_note_id"] = selected_id
         st.session_state["page"] = "詳細"
@@ -132,7 +160,7 @@ def render_list(storage: SQLiteStorage) -> None:
 
 def render_detail(storage: SQLiteStorage) -> None:
     """Render detail page with markdown/html exports."""
-    st.header("1件詳細")
+    st.header("1件詳細（配布・印刷向け）")
     note_id = st.session_state.get("selected_note_id")
     if not note_id:
         st.info("一覧画面からIDを選択してください。")
@@ -143,28 +171,44 @@ def render_detail(storage: SQLiteStorage) -> None:
         st.error("対象データが見つかりません。")
         return
 
-    st.subheader(f"{note.student_name}（{note.class_name}） - {note.interview_date.isoformat()}")
-    st.caption(f"生徒ID: {note.student_id} / タグ: {note.extracted_tags}")
+    st.markdown("---")
+    st.subheader("三者面談メモ")
+    st.caption(f"ID: {note.id}")
 
-    st.markdown("### 志望")
-    st.markdown(f"1. {note.hope_1}\n2. {note.hope_2}\n3. {note.hope_3}")
+    meta_col1, meta_col2, meta_col3 = st.columns(3)
+    meta_col1.markdown(f"**氏名**: {note.student_name}")
+    meta_col2.markdown(f"**クラス**: {note.class_name}")
+    meta_col3.markdown(f"**面談日**: {note.interview_date.isoformat()}")
+    st.markdown(f"**生徒ID**: {note.student_id}  ")
+    st.markdown(f"**抽出タグ**: {note.extracted_tags or 'なし'}")
+
+    st.markdown("### 志望校")
+    hopes_df = pd.DataFrame(
+        [
+            {"順位": "第1志望", "学校名": note.hope_1},
+            {"順位": "第2志望", "学校名": note.hope_2},
+            {"順位": "第3志望", "学校名": note.hope_3},
+        ]
+    )
+    st.table(hopes_df)
+
     st.markdown("### 現状（学習・生活）")
-    st.write(note.status_study_life)
+    st.write(note.status_study_life or "（記載なし）")
+
     st.markdown("### 保護者コメント")
-    st.write(note.guardian_comment)
+    st.write(note.guardian_comment or "（記載なし）")
+
     st.markdown("### 指導方針／次回までのToDo")
-    st.markdown(note.extracted_todo_md or note.guidance_todo)
+    st.markdown(note.extracted_todo_md or "- （記載なし）")
+
     st.markdown("### 自由メモ")
-    st.write(note.free_note)
-    st.markdown("### ルールベース抽出タグ")
-    st.write(note.extracted_tags)
+    st.write(note.free_note or "（記載なし）")
 
     markdown_text = to_markdown(note)
     html_text = to_html(note)
 
     st.download_button("Markdownをダウンロード", markdown_text, file_name=f"note_{note.id}.md")
     st.download_button("印刷向けHTMLをダウンロード", html_text, file_name=f"note_{note.id}.html")
-    st.code(markdown_text, language="markdown")
 
 
 def main() -> None:

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import csv
+import io
 import sqlite3
 from datetime import date, datetime
 from pathlib import Path
@@ -96,10 +98,11 @@ class SQLiteStorage:
                         "guardian_comment LIKE ?",
                         "guidance_todo LIKE ?",
                         "free_note LIKE ?",
+                        "student_name LIKE ?",
                     ]
                 ) + ")"
             )
-            params.extend([f"%{filters.keyword}%"] * 4)
+            params.extend([f"%{filters.keyword}%"] * 5)
 
         where_clause = f"WHERE {' AND '.join(clauses)}" if clauses else ""
         query = f"SELECT * FROM interview_notes {where_clause} ORDER BY interview_date DESC, id DESC"
@@ -112,6 +115,22 @@ class SQLiteStorage:
         with self._connect() as conn:
             rows = conn.execute("SELECT DISTINCT class_name FROM interview_notes ORDER BY class_name").fetchall()
         return [r[0] for r in rows]
+
+    def export_all_as_csv(self) -> str:
+        """Export all notes in CSV format for backup."""
+        query = "SELECT * FROM interview_notes ORDER BY interview_date DESC, id DESC"
+        with self._connect() as conn:
+            rows = conn.execute(query).fetchall()
+        if not rows:
+            return ""
+
+        headers = rows[0].keys()
+        output = io.StringIO()
+        writer = csv.DictWriter(output, fieldnames=headers)
+        writer.writeheader()
+        for row in rows:
+            writer.writerow(dict(row))
+        return output.getvalue()
 
     @staticmethod
     def _row_to_model(row: sqlite3.Row) -> InterviewNote:
