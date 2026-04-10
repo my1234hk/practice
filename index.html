@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>出退勤トラッカー</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <h1>出退勤トラッカー</h1>
+      <p class="sub">iPhoneのホーム画面に追加して、ワンタップで記録できます。</p>
+
+      <section class="panel action-panel">
+        <button id="clockInBtn" class="btn in">出勤を記録</button>
+        <button id="clockOutBtn" class="btn out">退勤を記録</button>
+        <p id="lastAction" class="last-action">まだ記録はありません。</p>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h2>最近14日間の勤務時間</h2>
+          <button id="exportBtn" class="btn ghost">CSV出力</button>
+        </div>
+        <canvas id="hoursChart" width="800" height="320" aria-label="勤務時間グラフ"></canvas>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h2>記録一覧</h2>
+          <button id="clearBtn" class="btn danger">全削除</button>
+        </div>
+        <ul id="recordsList" class="records"></ul>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,119 @@
+:root {
+  color-scheme: light;
+  --bg: #f4f7fb;
+  --panel: #ffffff;
+  --text: #122036;
+  --muted: #5d6b82;
+  --in: #0f9d58;
+  --out: #1976d2;
+  --danger: #d93025;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.container {
+  width: min(920px, 100% - 24px);
+  margin: 16px auto 48px;
+}
+
+h1 { margin: 0 0 8px; }
+.sub { color: var(--muted); margin: 0 0 16px; }
+
+.panel {
+  background: var(--panel);
+  border-radius: 14px;
+  padding: 14px;
+  margin-top: 12px;
+  box-shadow: 0 6px 20px rgba(18, 32, 54, 0.08);
+}
+
+.action-panel {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.last-action {
+  grid-column: 1 / -1;
+  margin: 4px 0 0;
+  color: var(--muted);
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+h2 { font-size: 1.05rem; margin: 0; }
+
+.btn {
+  border: none;
+  border-radius: 10px;
+  padding: 12px 14px;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.btn:active { transform: translateY(1px); }
+
+.in { background: var(--in); }
+.out { background: var(--out); }
+.danger { background: var(--danger); }
+.ghost {
+  background: #e8eef7;
+  color: var(--text);
+  font-size: .86rem;
+  padding: 8px 10px;
+}
+
+.records {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.records li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #f6f9ff;
+  border: 1px solid #e2e9f4;
+}
+
+.tag {
+  font-weight: 700;
+  border-radius: 99px;
+  padding: 4px 10px;
+  color: #fff;
+  font-size: .82rem;
+}
+
+.tag.in { background: var(--in); }
+.tag.out { background: var(--out); }
+
+#hoursChart {
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+  border: 1px solid #e2e9f4;
+  background: #fbfdff;
+}
+
+@media (max-width: 560px) {
+  .action-panel { grid-template-columns: 1fr; }
+}
